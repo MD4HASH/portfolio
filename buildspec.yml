@@ -1,0 +1,33 @@
+# buildspec.yml
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      # Install Terraform
+      - wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+      - unzip terraform_1.5.7_linux_amd64.zip
+      - mv terraform /usr/local/bin/
+      # Install Ansible
+      - pip install ansible
+  pre_build:
+    commands:
+      - cd terraform
+      - terraform init
+      - terraform validate
+  build:
+    commands:
+      - terraform plan -out=tfplan
+  post_build:
+    commands:
+      # Apply Terraform (skipped in prod unless approved)
+      - if [ "$ENV" = "prod" ]; then echo "Skipping apply in prod"; else terraform apply -auto-approve tfplan; fi
+      # Run Ansible playbook using AWS SSM for inventory
+      - ansible-playbook -i aws_ec2.yml ../playbooks/install-webserver.yml
+artifacts:
+  files:
+    - terraform/tfplan
+    - terraform/*.tfstate
+    - terraform/*.tfstate.backup
