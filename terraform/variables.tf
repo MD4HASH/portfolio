@@ -19,7 +19,7 @@ variable "private_subnet_cidrs" {
 
 variable "instance_size" {
   type    = string
-  default = "t2.micro"
+  default = "m5.xlarge"
 }
 
 variable "aws_region" {

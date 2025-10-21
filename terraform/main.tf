@@ -58,14 +58,24 @@ data "aws_ami" "ubuntu" {
 resource "aws_security_group" "ingress-ssh" {
   name   = "allow-all-ssh"
   vpc_id = module.main.vpc_id
+  # SSH
   ingress {
-    cidr_blocks = [
-      "0.0.0.0/0"
-    ]
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
+    description = "Allow SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
+
+  # Web UI
+  ingress {
+    description = "Allow Text-Generation-WebUI"
+    from_port   = 7860
+    to_port     = 7860
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
 
   egress {
     from_port   = 0
@@ -112,13 +122,35 @@ resource "aws_instance" "main_vsi" {
   vpc_security_group_ids      = [aws_security_group.ingress-ssh.id]
   associate_public_ip_address = true
   key_name                    = aws_key_pair.aws_admin_key.key_name
-  connection {
-    user        = "ubuntu"
-    private_key = tls_private_key.aws_admin_key.private_key_pem
-    host        = self.public_ip
+
+  root_block_device {
+    volume_size = 50
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name = "webui-server"
   }
 
   provisioner "local-exec" {
     command = "chmod 600 ${local_file.aws_admin_private_key_pem.filename}"
   }
+}
+
+# Separate EBS volume for models
+resource "aws_ebs_volume" "webui_models" {
+  availability_zone = aws_instance.main_vsi.availability_zone
+  size              = 100
+  type              = "gp3"
+
+  tags = {
+    Name = "webui-models"
+  }
+}
+
+# Attach the EBS volume to the instance
+resource "aws_volume_attachment" "webui_models_attach" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.webui_models.id
+  instance_id = aws_instance.main_vsi.id
 }
