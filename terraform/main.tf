@@ -1,3 +1,15 @@
+# terraform/main.tf
+module "prerequisites" {
+  source = "./prerequisites"
+}
+
+terraform {
+  backend "s3" {
+    key    = "prod/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
 # Create a private key to access the management server
 
 resource "tls_private_key" "aws_admin_key" {
@@ -40,7 +52,6 @@ data "aws_ami" "ubuntu" {
 
   owners = ["099720109477"] # Canonical’s official AWS account ID
 }
-
 
 # Security Groups
 
@@ -98,7 +109,7 @@ resource "aws_instance" "main_vsi" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_size
   subnet_id                   = module.main.public_subnets[0]
-  vpc_security_group_ids      = [aws_security_group.ingress-ssh.id, aws_security_group.boundary.id, aws_security_group.vault.id]
+  vpc_security_group_ids      = [aws_security_group.ingress-ssh.id]
   associate_public_ip_address = true
   key_name                    = aws_key_pair.aws_admin_key.key_name
   connection {

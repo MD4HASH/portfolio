@@ -1,4 +1,4 @@
-# pipeline.tf
+# terraform/pipeline.tf
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codestarconnections_connection
 resource "aws_codestarconnections_connection" "github" {
   name          = "github-connection"
@@ -8,7 +8,7 @@ resource "aws_codestarconnections_connection" "github" {
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codebuild_project
 resource "aws_codebuild_project" "build" {
   name         = "my-app-build"
-  service_role = aws_iam_role.codebuild_role.arn
+  service_role = module.prerequisites.codebuild_role_arn
   artifacts {
     type = "CODEPIPELINE"
   }
@@ -18,7 +18,7 @@ resource "aws_codebuild_project" "build" {
     type         = "LINUX_CONTAINER"
     environment_variable {
       name  = "ENV"
-      value = "dev" # Use "prod" for production apply stage
+      value = "dev"
     }
   }
   source {
@@ -30,10 +30,10 @@ resource "aws_codebuild_project" "build" {
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codepipeline
 resource "aws_codepipeline" "pipeline" {
   name     = "my-app-pipeline"
-  role_arn = aws_iam_role.codepipeline_role.arn
+  role_arn = module.prerequisites.codepipeline_role_arn
 
   artifact_store {
-    location = aws_s3_bucket.pipeline_artifacts.bucket
+    location = module.prerequisites.pipeline_artifacts_bucket_name
     type     = "S3"
   }
 
@@ -48,7 +48,7 @@ resource "aws_codepipeline" "pipeline" {
       output_artifacts = ["source_output"]
       configuration = {
         ConnectionArn    = aws_codestarconnections_connection.github.arn
-        FullRepositoryId = "YOUR_GITHUB_USERNAME/YOUR_REPO_NAME" # Replace with your repo
+        FullRepositoryId = "YOUR_GITHUB_USERNAME/YOUR_REPO_NAME" # Replace, e.g., "johndoe/my-app"
         BranchName       = "main"
       }
     }
