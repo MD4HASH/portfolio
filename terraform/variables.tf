@@ -28,12 +28,6 @@ variable "instance_size" {
   default = "t3.medium"
 }
 
-variable "ansible_repo_url" {
-  description = "Repo that contains your Ansible playbooks"
-  type        = string
-  default     = "https://github.com/chrisblackstock/ansible-config.git"
-}
-
 variable "allow_ssh_from" {
   description = "CIDR allowed to SSH to instances (default 0.0.0.0/0 like original)"
   type        = string
@@ -59,3 +53,4 @@ variable "ansible_repo_url" {
   description = "Git repository URL for Ansible playbooks"
   type        = string
   default     = "https://github.com/MD4HASH/portfolio"
+}

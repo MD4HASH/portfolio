@@ -1,14 +1,4 @@
-variable "vpc_id" {}
-variable "public_subnets" { type = list(string) }
-variable "ami_id" {}
-variable "key_name" {}
-variable "instance_size" {}
-variable "instance_sg_id" {}
-variable "alb_sg_id" {}
-variable "ansible_repo_url" {}
-variable "desired_capacity" { type = number }
-variable "min_size" { type = number }
-variable "max_size" { type = number }
+# terraform/modules/compute/main.tf
 
 resource "aws_launch_template" "webui_lt" {
   name_prefix   = "webui-lt-"
@@ -30,7 +20,10 @@ resource "aws_launch_template" "webui_lt" {
     }
   }
 
-  user_data = base64encode(data.template_file.userdata.rendered)
+  # Use Terraform's built-in templatefile() function
+  user_data = base64encode(templatefile("${path.module}/../../templates/ansible-userdata.sh", {
+    ansible_repo_url = var.ansible_repo_url
+  }))
 
   tag_specifications {
     resource_type = "instance"
@@ -40,15 +33,6 @@ resource "aws_launch_template" "webui_lt" {
   }
 }
 
-
-data "template_file" "userdata" {
-  template = file("${path.module}/../../templates/ansible-userdata.sh")
-  vars = {
-    ansible_repo_url = var.ansible_repo_url
-  }
-}
-
-# Auto Scaling Group
 resource "aws_autoscaling_group" "webui_asg" {
   name                = "webui-asg"
   min_size            = var.min_size
@@ -72,7 +56,6 @@ resource "aws_autoscaling_group" "webui_asg" {
   }
 }
 
-# ALB
 resource "aws_lb" "webui_alb" {
   name               = "webui-alb"
   load_balancer_type = "application"
@@ -106,20 +89,7 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-# Attach ASG to Target Group
 resource "aws_autoscaling_attachment" "asg_to_tg" {
   autoscaling_group_name = aws_autoscaling_group.webui_asg.name
-  alb_target_group_arn   = aws_lb_target_group.webui_tg.arn
-}
-
-output "asg_name" {
-  value = aws_autoscaling_group.webui_asg.name
-}
-
-output "lb_dns_name" {
-  value = aws_lb.webui_alb.dns_name
-}
-
-output "lb_arn" {
-  value = aws_lb.webui_alb.arn
+  lb_target_group_arn    = aws_lb_target_group.webui_tg.arn
 }

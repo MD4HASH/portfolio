@@ -1,24 +1,27 @@
 
-
-# terraform/main.tf
-
-
 terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.17"
+    }
+
+  }
+
   backend "s3" {
     key    = "prod/terraform.tfstate"
     region = "us-east-1"
   }
 }
 
-provider "aws" {
-  region = var.region
-}
+
+
 
 data "aws_caller_identity" "current" {}
 
 
 module "prerequisites" {
-  source = "./prerequisites"
+  source = "./modules/prerequisites"
 }
 
 # Create a private key to access the management server
@@ -32,6 +35,18 @@ resource "local_file" "aws_admin_private_key_pem" {
   content  = tls_private_key.aws_admin_key.private_key_pem
   filename = "../secrets/aws_admin_key.pem"
 }
+
+resource "null_resource" "null_provisioner" {
+  triggers = {
+    key_file = local_file.aws_admin_private_key_pem.filename
+  }
+
+  provisioner "local-exec" {
+    command = "chmod 600 ${local_file.aws_admin_private_key_pem.filename}"
+  }
+}
+
+
 
 # Create keypair in aws
 resource "aws_key_pair" "aws_admin_key" {
@@ -95,27 +110,15 @@ module "compute" {
   desired_capacity = var.desired_capacity
   min_size         = var.min_size
   max_size         = var.max_size
-  ansible_repo_url = var.ansible_repo_url
 }
 
-# --- config (AWS Config)
+
 module "config" {
-  source     = "./modules/config"
-  account_id = data.aws_caller_identity.current.account_id
+  source      = "./modules/config"
+  account_id  = data.aws_caller_identity.current.account_id
+  environment = var.environment
 }
 
-# --- outputs
-output "alb_dns" {
-  value = module.compute.lb_dns_name
-}
-
-output "asg_name" {
-  value = module.compute.asg_name
-}
-
-output "private_key_path" {
-  value = local_file.aws_admin_private_key_pem.filename
-}
 
 
 # # Security Groups

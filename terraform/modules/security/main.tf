@@ -1,8 +1,3 @@
-variable "vpc_id" {}
-variable "public_subnets" { type = list(string) }
-variable "environment" {}
-variable "allow_ssh_from" { type = string }
-
 # Security group for ALB (allow inbound 80)
 resource "aws_security_group" "alb_sg" {
   name   = "${var.environment}-alb-sg"
