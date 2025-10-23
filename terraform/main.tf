@@ -95,6 +95,7 @@ module "compute" {
   desired_capacity = var.desired_capacity
   min_size         = var.min_size
   max_size         = var.max_size
+  ansible_repo_url = var.ansible_repo_url
 }
 
 # --- config (AWS Config)

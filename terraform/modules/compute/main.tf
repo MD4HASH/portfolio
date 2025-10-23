@@ -10,7 +10,6 @@ variable "desired_capacity" { type = number }
 variable "min_size" { type = number }
 variable "max_size" { type = number }
 
-# Launch Template
 resource "aws_launch_template" "webui_lt" {
   name_prefix   = "webui-lt-"
   image_id      = var.ami_id
@@ -22,7 +21,6 @@ resource "aws_launch_template" "webui_lt" {
     security_groups             = [var.instance_sg_id]
   }
 
-  # Additional EBS for models (each ASG instance gets its own)
   block_device_mappings {
     device_name = "/dev/sdf"
     ebs {
@@ -32,13 +30,21 @@ resource "aws_launch_template" "webui_lt" {
     }
   }
 
-  user_data = filebase64("${path.module}/../../templates/ansible-userdata.sh")
+  user_data = base64encode(data.template_file.userdata.rendered)
 
   tag_specifications {
     resource_type = "instance"
     tags = {
       Name = "webui-asg-instance"
     }
+  }
+}
+
+
+data "template_file" "userdata" {
+  template = file("${path.module}/../../templates/ansible-userdata.sh")
+  vars = {
+    ansible_repo_url = var.ansible_repo_url
   }
 }
 
