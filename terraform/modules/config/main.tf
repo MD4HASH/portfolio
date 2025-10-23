@@ -1,9 +1,7 @@
-# modules/config/main.tf
-
 # --- S3 bucket for AWS Config
 resource "aws_s3_bucket" "config_bucket" {
   bucket        = "aws-config-${var.account_id}"
-  force_destroy = true # optional, allows bucket deletion for testing
+  force_destroy = true # allows bucket deletion for testing
 }
 
 resource "aws_s3_bucket_policy" "config_bucket_policy" {
@@ -12,32 +10,25 @@ resource "aws_s3_bucket_policy" "config_bucket_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # Objects
+      # Allow AWS Config to put objects into the bucket
       {
         Sid       = "AWSConfigObjectsPermissions"
         Effect    = "Allow"
         Principal = { Service = "config.amazonaws.com" }
-        Action = [
-          "s3:PutObject"
-        ]
-        Resource = "${aws_s3_bucket.config_bucket.arn}/*"
+        Action    = ["s3:PutObject"]
+        Resource  = "${aws_s3_bucket.config_bucket.arn}/*"
       },
-      # Bucket itself
+      # Allow AWS Config to read bucket ACL and location
       {
         Sid       = "AWSConfigBucketPermissions"
         Effect    = "Allow"
         Principal = { Service = "config.amazonaws.com" }
-        Action = [
-          "s3:GetBucketAcl",
-          "s3:GetBucketLocation"
-        ]
-        Resource = aws_s3_bucket.config_bucket.arn
+        Action    = ["s3:GetBucketAcl", "s3:GetBucketLocation"]
+        Resource  = aws_s3_bucket.config_bucket.arn
       }
     ]
   })
 }
-
-
 
 # --- IAM Role for AWS Config
 resource "aws_iam_role" "config_role" {
@@ -47,20 +38,48 @@ resource "aws_iam_role" "config_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action = "sts:AssumeRole"
-        Principal = {
-          Service = "config.amazonaws.com"
-        }
-        Effect = "Allow"
+        Action    = "sts:AssumeRole"
+        Principal = { Service = "config.amazonaws.com" }
+        Effect    = "Allow"
       }
     ]
   })
 }
 
-# Attach AWS managed policy
-resource "aws_iam_role_policy_attachment" "config_policy" {
-  role       = aws_iam_role.config_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
+# --- Custom inline policy for AWS Config
+resource "aws_iam_role_policy" "config_inline_policy" {
+  name = "aws-config-inline-policy"
+  role = aws_iam_role.config_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetBucketAcl",
+          "s3:GetBucketLocation"
+        ]
+        Resource = [
+          "${aws_s3_bucket.config_bucket.arn}",
+          "${aws_s3_bucket.config_bucket.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "config:Put*",
+          "config:Delete*",
+          "config:Start*",
+          "config:Stop*",
+          "config:Describe*",
+          "config:Get*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 # --- Config Recorder
@@ -79,13 +98,4 @@ resource "aws_config_delivery_channel" "main" {
 resource "aws_config_configuration_recorder_status" "main" {
   name       = aws_config_configuration_recorder.main.name
   is_enabled = true
-}
-
-# --- Outputs
-output "config_bucket_name" {
-  value = aws_s3_bucket.config_bucket.bucket
-}
-
-output "config_role_arn" {
-  value = aws_iam_role.config_role.arn
 }
