@@ -1,0 +1,5 @@
+webui_repo: https://github.com/oobabooga/text-generation-webui.git
+webui_dir: /home/ubuntu/text-generation-webui
+python_version: python3
+model_name: gpt4all-j  # change to any compatible model
+port: 7860

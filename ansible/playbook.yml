@@ -1,0 +1,5 @@
+- name: Deploy text-generation-webui
+  hosts: webui
+  become: yes
+  roles:
+    - webui
