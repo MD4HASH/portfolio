@@ -27,14 +27,11 @@
     accept_hostkey: yes
   become_user: ubuntu
 
-- name: Install Python requirements (all files in requirements/full)
+- name: Install Python requirements (AMD optimized)
   pip:
-    requirements: "{{ item }}"
+    requirements: /home/ubuntu/text-generation-webui/requirements/full/requirements_amd.txt
     executable: pip3
-  loop:
-    - /home/ubuntu/text-generation-webui/requirements/full/requirements.txt
-    - /home/ubuntu/text-generation-webui/requirements/full/requirements_amd.txt
-    - /home/ubuntu/text-generation-webui/requirements/full/requirements_amd_noavx2.txt
+
 
 - name: Create models directory (for TinyLlama)
   file:

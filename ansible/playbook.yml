@@ -1,5 +1,6 @@
 - name: Deploy text-generation-webui
-  hosts: webui
-  become: yes
+  hosts: localhost
+  connection: local
+  become: true
   roles:
     - webui

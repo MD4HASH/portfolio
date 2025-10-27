@@ -21,9 +21,10 @@ resource "aws_launch_template" "webui_lt" {
   }
 
   # Use Terraform's built-in templatefile() function
-  user_data = base64encode(templatefile("${path.module}/../../templates/ansible-userdata.sh", {
+  user_data = base64encode(templatefile("${path.root}/templates/ansible-userdata.sh", {
     ansible_repo_url = var.ansible_repo_url
   }))
+
 
   tag_specifications {
     resource_type = "instance"
