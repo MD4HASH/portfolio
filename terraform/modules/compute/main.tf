@@ -12,7 +12,7 @@ resource "aws_launch_template" "webui_lt" {
   }
 
   block_device_mappings {
-    device_name = "/dev/sdf"
+    device_name = "/dev/xvda"
     ebs {
       volume_size           = 100
       volume_type           = "gp3"
