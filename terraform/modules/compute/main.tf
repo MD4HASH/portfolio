@@ -11,12 +11,14 @@ resource "aws_launch_template" "webui_lt" {
     security_groups             = [var.instance_sg_id]
   }
 
-  root_block_device {
-    volume_size           = 100
-    volume_type           = "gp3"
-    delete_on_termination = true
+  block_device_mappings {
+    device_name = "/dev/nvme0n1"
+    ebs {
+      volume_size           = 100
+      volume_type           = "gp3"
+      delete_on_termination = true
+    }
   }
-
 
   # Use Terraform's built-in templatefile() function
   user_data = base64encode(templatefile("${path.root}/templates/ansible-userdata.sh", {
