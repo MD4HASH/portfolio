@@ -14,9 +14,8 @@ resource "aws_launch_template" "webui_lt" {
   block_device_mappings {
     device_name = "/dev/nvme0n1"
     ebs {
-      volume_size           = 100
-      volume_type           = "gp3"
-      delete_on_termination = true
+      volume_size = 100
+      volume_type = "gp3"
     }
   }
 
