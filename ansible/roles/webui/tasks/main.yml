@@ -1,90 +1,97 @@
+- name: Setup Text Generation WebUI
+  hosts: localhost
+  become: yes
+  tasks:
 
-- name: Update apt cache
-  apt:
-    update_cache: yes
+    - name: Update apt cache
+      apt:
+        update_cache: yes
 
-- name: Install system dependencies
-  apt:
-    name:
-      - git
-      - python3
-      - python3-pip
-      - build-essential
-      - libssl-dev
-      - libffi-dev
-      - python3-dev
-      - wget
-      - curl
-    state: present
+    - name: Install system dependencies
+      apt:
+        name:
+          - git
+          - python3
+          - python3-pip
+          - build-essential
+          - libssl-dev
+          - libffi-dev
+          - python3-dev
+          - wget
+          - curl
+        state: present
 
-- name: Clone text-generation-webui repo
-  git:
-    repo: https://github.com/oobabooga/text-generation-webui.git
-    dest: /home/ubuntu/text-generation-webui
-    version: main
-    force: yes
-    update: yes
-    accept_hostkey: yes
-  become_user: ubuntu
+    - name: Clone text-generation-webui repo
+      git:
+        repo: https://github.com/oobabooga/text-generation-webui.git
+        dest: /home/ubuntu/text-generation-webui
+        version: main
+        force: yes
+        update: yes
+        accept_hostkey: yes
+      become_user: ubuntu
 
-- name: Install Python requirements (AMD optimized)
-  pip:
-    requirements: /home/ubuntu/text-generation-webui/requirements/full/requirements_amd.txt
-    executable: pip3
+    - name: Create Python venv for WebUI inside ansible repo
+      command: python3.11 -m venv /home/ubuntu/webui-venv
+      args:
+        creates: /home/ubuntu/webui-venv/bin/activate
 
+    - name: Install Python requirements (AMD optimized) in venv
+      pip:
+        requirements: /home/ubuntu/text-generation-webui/requirements/full/requirements_amd.txt
+        executable: /home/ubuntu/webui-venv/bin/pip
 
-- name: Create models directory (for TinyLlama)
-  file:
-    path: /home/ubuntu/text-generation-webui/models
-    state: directory
-    owner: ubuntu
-    group: ubuntu
-    mode: '0755'
+    - name: Create models directory
+      file:
+        path: /home/ubuntu/text-generation-webui/user_data/models
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
 
-- name: Download TinyLlama 1.1B Chat from Hugging Face
-  become_user: ubuntu
-  shell: |
-    set -e
-    cd /home/ubuntu/text-generation-webui/user_data/models
-    if [ ! -d "TinyLlama-1.1B-Chat" ]; then
-      git clone https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0 TinyLlama-1.1B-Chat
-    fi
-  args:
-    executable: /bin/bash
+    - name: Download TinyLlama 1.1B Chat from Hugging Face
+      become_user: ubuntu
+      shell: |
+        set -e
+        cd /home/ubuntu/text-generation-webui/user_data/models
+        if [ ! -d "TinyLlama-1.1B-Chat" ]; then
+          git clone https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0 TinyLlama-1.1B-Chat
+        fi
+      args:
+        executable: /bin/bash
 
-- name: Set ownership on TinyLlama model directory
-  file:
-    path: /home/ubuntu/text-generation-webui/user_data/models/TinyLlama-1.1B-Chat
-    state: directory
-    owner: ubuntu
-    group: ubuntu
-    recurse: yes
+    - name: Set ownership on TinyLlama model directory
+      file:
+        path: /home/ubuntu/text-generation-webui/user_data/models/TinyLlama-1.1B-Chat
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        recurse: yes
 
-- name: Create systemd service for text-generation-webui
-  copy:
-    dest: /etc/systemd/system/text-generation-webui.service
-    content: |
-      [Unit]
-      Description=Text Generation WebUI
-      After=network.target
+    - name: Create systemd service for text-generation-webui
+      copy:
+        dest: /etc/systemd/system/text-generation-webui.service
+        content: |
+          [Unit]
+          Description=Text Generation WebUI
+          After=network.target
 
-      [Service]
-      Type=simple
-      User=ubuntu
-      WorkingDirectory=/home/ubuntu/text-generation-webui
-      Environment=TRANSFORMERS_ATTENTION_IMPLEMENTATION=eager
-      ExecStart=/usr/bin/python3 /home/ubuntu/text-generation-webui/server.py --listen --listen-port 7860 
-      Restart=always
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/home/ubuntu/text-generation-webui
+          Environment=TRANSFORMERS_ATTENTION_IMPLEMENTATION=eager
+          ExecStart=/home/ubuntu/webui-venv/bin/python /home/ubuntu/text-generation-webui/server.py --listen --listen-port 7860
 
-      [Install]
-      WantedBy=multi-user.target
+          [Install]
+          WantedBy=multi-user.target
 
-- name: Reload systemd
-  systemd:
-    daemon_reload: yes
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
 
-- name: Enable and start text-generation-webui service
-  systemd:
-    name: text-generation-webui
-    enabled: yes
-    state: started
+    - name: Enable and start text-generation-webui service
+      systemd:
+        name: text-generation-webui
+        enabled: yes
+        state: started
