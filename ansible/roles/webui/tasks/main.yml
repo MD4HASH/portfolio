@@ -45,7 +45,7 @@
   become_user: ubuntu
   shell: |
     set -e
-    cd /home/ubuntu/text-generation-webui/models
+    cd /home/ubuntu/text-generation-webui/user_data/models
     if [ ! -d "TinyLlama-1.1B-Chat" ]; then
       git clone https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0 TinyLlama-1.1B-Chat
     fi
@@ -54,7 +54,7 @@
 
 - name: Set ownership on TinyLlama model directory
   file:
-    path: /home/ubuntu/text-generation-webui/models/TinyLlama-1.1B-Chat
+    path: /home/ubuntu/text-generation-webui/user_data/models/TinyLlama-1.1B-Chat
     state: directory
     owner: ubuntu
     group: ubuntu
@@ -73,7 +73,7 @@
       User=ubuntu
       WorkingDirectory=/home/ubuntu/text-generation-webui
       Environment=TRANSFORMERS_ATTENTION_IMPLEMENTATION=eager
-      ExecStart=/usr/bin/python3 /home/ubuntu/text-generation-webui/server.py --listen --listen-port 7860 --model models/TinyLlama-1.1B-Chat
+      ExecStart=/usr/bin/python3 /home/ubuntu/text-generation-webui/server.py --listen --listen-port 7860 
       Restart=always
 
       [Install]

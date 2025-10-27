@@ -9,13 +9,21 @@ apt-get update -y
 apt-get upgrade -y
 
 # Install dependencies
-apt-get install -y git python3 python3-pip
+apt-get install -y git wget build-essential python3.11 python3.11-venv python3.11-dev python3-pip
 
 # Ensure pip path
 export PATH=$PATH:/usr/local/bin
 
-# Install Ansible
-pip3 install --upgrade ansible
+# Upgrade pip for Python 3.11
+python3.11 -m ensurepip --upgrade
+python3.11 -m pip install --upgrade pip setuptools wheel
+
+# Create a virtual environment for Ansible and WebUI
+python3.11 -m venv /home/ubuntu/webui-venv
+source /home/ubuntu/webui-venv/bin/activate
+
+# Install Ansible in the venv
+pip install --upgrade ansible
 
 # Clone the repo root
 git clone ${ansible_repo_url} /home/ubuntu/ansible-repo
@@ -23,7 +31,8 @@ git clone ${ansible_repo_url} /home/ubuntu/ansible-repo
 # Go into the ansible subfolder
 cd /home/ubuntu/ansible-repo/ansible
 
-# Run the playbook
+# Run the playbook using the venv Python
+ANSIBLE_PYTHON_INTERPRETER=/home/ubuntu/webui-venv/bin/python \
 ansible-playbook playbook.yml -i localhost, --connection=local
 
 # Fix permissions
