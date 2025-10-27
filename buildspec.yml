@@ -17,6 +17,8 @@ phases:
     commands:
       - echo "Initializing Terraform..."
       - cd terraform
+      - ls -la
+      - terraform version
       - terraform init -input=false
       - terraform validate
 
