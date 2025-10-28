@@ -17,4 +17,5 @@ phases:
     commands:
       - cd terraform
       - terraform init
-      - terraform apply -auto-approve tfplan
+      - ls -R  # optional debug
+      - terraform apply -auto-approve terraform/tfplan
