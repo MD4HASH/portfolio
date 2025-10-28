@@ -1,12 +1,17 @@
 version: 0.2
 phases:
   install:
-    runtime-versions:
-      python: 3.11
     commands:
-      - wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
-      - unzip terraform_1.5.7_linux_amd64.zip
-      - mv terraform /usr/local/bin/
+      - echo "Updating and installing dependencies..."
+      - (command -v yum && yum install -y wget unzip) || (command -v dnf && dnf install -y wget unzip) || (apt-get update && apt-get install -y wget unzip)
+      - echo "Downloading Terraform..."
+      - wget -q https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -O /tmp/terraform.zip
+      - ls -l /tmp/terraform.zip
+      - echo "Unzipping Terraform..."
+      - unzip -o /tmp/terraform.zip -d /usr/local/bin/
+      - chmod +x /usr/local/bin/terraform
+      - terraform version
+
   pre_build:
     commands:
       - cd terraform
