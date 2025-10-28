@@ -36,7 +36,7 @@ variable "allow_ssh_from" {
 
 variable "desired_capacity" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "min_size" {
